@@ -32,6 +32,7 @@ extern const sai_route_api_t            route_api;
 extern const sai_virtual_router_api_t   router_api;
 extern const sai_switch_api_t           switch_api;
 extern const sai_port_api_t             port_api;
+extern const sai_lag_api_t              lag_api;
 extern const sai_fdb_api_t              fdb_api;
 extern const sai_neighbor_api_t         neighbor_api;
 extern const sai_next_hop_api_t         next_hop_api;
