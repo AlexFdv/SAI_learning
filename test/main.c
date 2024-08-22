@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "sai.h"
 
+#include <stdlib.h>
+
 const char* test_profile_get_value(
     _In_ sai_switch_profile_id_t profile_id,
     _In_ const char* variable)
@@ -24,11 +26,31 @@ const service_method_table_t test_services = {
 static bool getLagMembers(const sai_object_id_t *lag_oid, sai_lag_api_t *lag_api)
 {
     sai_status_t status;
-    sai_attribute_t attr_list[2];
+    sai_attribute_t attr_list[1];
     attr_list[0].id = SAI_LAG_ATTR_PORT_LIST;
-    attr_list[0].value.oid = *lag_oid;
+
+    attr_list[0].value.objlist.count = 2;
+    attr_list[0].value.objlist.list = calloc(1, sizeof(sai_object_id_t) * 2);
 
     status = lag_api->get_lag_attribute(*lag_oid, 2, attr_list);
+    if (status != SAI_STATUS_SUCCESS) {
+        printf("Failed to create a LAG MEMBER, status=%d\n", status);
+        return false;
+    }
+
+    free(attr_list[0].value.objlist.list);
+
+    return true;
+}
+
+static bool getLagMemberAttributes(const sai_object_id_t *lag_member_oid, sai_lag_api_t *lag_api)
+{
+    sai_status_t status;
+    sai_attribute_t attr_list[2];
+    attr_list[0].id = SAI_LAG_MEMBER_ATTR_LAG_ID;
+    attr_list[1].id = SAI_LAG_MEMBER_ATTR_PORT_ID;
+
+    status = lag_api->get_lag_member_attribute(*lag_member_oid, 2, attr_list);
     if (status != SAI_STATUS_SUCCESS) {
         printf("Failed to create a LAG MEMBER, status=%d\n", status);
         return false;
@@ -64,7 +86,7 @@ int main()
         attr_list[0].id = SAI_LAG_MEMBER_ATTR_LAG_ID;
         attr_list[0].value.oid = lag_oid_1;
         attr_list[1].id = SAI_LAG_MEMBER_ATTR_PORT_ID;
-        attr_list[1].value.u16 = 11;
+        attr_list[1].value.oid = 0x010000001;
  
         status = lag_api->create_lag_member(&lag_member[0], 2, attr_list);
         if (status != SAI_STATUS_SUCCESS)
@@ -79,7 +101,7 @@ int main()
         attr_list[0].id = SAI_LAG_MEMBER_ATTR_LAG_ID;
         attr_list[0].value.oid = lag_oid_1;
         attr_list[1].id = SAI_LAG_MEMBER_ATTR_PORT_ID;
-        attr_list[1].value.u16 = 22;
+        attr_list[1].value.oid = 0x010000002;
 
         status = lag_api->create_lag_member(&lag_member[1], 2, attr_list);
         if (status != SAI_STATUS_SUCCESS) {
@@ -100,7 +122,7 @@ int main()
         attr_list[0].id = SAI_LAG_MEMBER_ATTR_LAG_ID;
         attr_list[0].value.oid = lag_oid_2;
         attr_list[1].id = SAI_LAG_MEMBER_ATTR_PORT_ID;
-        attr_list[1].value.u16 = 33;
+        attr_list[1].value.oid = 0x010000003;
  
         status = lag_api->create_lag_member(&lag_member[2], 2, attr_list);
         if (status != SAI_STATUS_SUCCESS)
@@ -115,7 +137,7 @@ int main()
         attr_list[0].id = SAI_LAG_MEMBER_ATTR_LAG_ID;
         attr_list[0].value.oid = lag_oid_2;
         attr_list[1].id = SAI_LAG_MEMBER_ATTR_PORT_ID;
-        attr_list[1].value.u16 = 44;
+        attr_list[1].value.oid = attr_list[1].value.oid = 0x010000004;
 
         status = lag_api->create_lag_member(&lag_member[3], 2, attr_list);
         if (status != SAI_STATUS_SUCCESS) {
@@ -126,6 +148,11 @@ int main()
 
     getLagMembers(&lag_oid_1, lag_api);
     getLagMembers(&lag_oid_2, lag_api);
+    
+    getLagMemberAttributes(&lag_member[0], lag_api);
+    getLagMemberAttributes(&lag_member[1], lag_api);
+    getLagMemberAttributes(&lag_member[2], lag_api);
+    getLagMemberAttributes(&lag_member[3], lag_api);
 
     status = lag_api->remove_lag_member(lag_member[1]);
     status = lag_api->remove_lag_member(lag_member[2]);
